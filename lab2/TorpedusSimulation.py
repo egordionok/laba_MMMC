@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import *
 
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.patches import Arc
+
 import OceanForm
 import oceanwidget
 import math
@@ -37,7 +39,7 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
 
     def HereAreWeGo(self):
         self.widget.canvas.axes.clear()
-        global X, Y, Phi, Vx, Vy, Omega, cl, cb, cv, R, rho, a, b, Vo, J, m, X_aim, Y_aim, Phi_aim, Vx_aim, Vy_aim, Omega_aim, Explode, T_Explode, dt, Step_o, Detected, cl_aim, cb_aim, cv_aim, S_front, rho, S_side, L, Vo_aim, R_scr, S_r, J_aim, m_aim, X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind, monevr
+        global X, Y, Phi, Vx, Vy, Omega, cl, cb, cv, R, rho, a, b, Vo, J, m, X_aim, Y_aim, Phi_aim, Vx_aim, Vy_aim, Omega_aim, Explode, T_Explode, dt, Step_o, Detected, cl_aim, cb_aim, cv_aim, S_front, rho, S_side, L, Vo_aim, R_scr, S_r, J_aim, m_aim, X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind, monevr, n_monevra, znak_monevra
         dt = 0.01
         k=1
         Explode = 0
@@ -87,7 +89,7 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
         Omega_aim = float(self.Omega0_Edit_2.text())
         print(2.6)
         self.widget.canvas.axes.axis('equal')
-        self.widget.canvas.axes.set(xlim=[-100, 100], ylim=[-100, 100])
+        self.widget.canvas.axes.set(xlim=[-200, 200], ylim=[-200, 200])
         print(2.8)
         TorpedaX = np.array([-a * 0.66, b * 0.8, b, b * 0.8, -a * 0.66, -a * 0.8, -a, -a, -0.8 * a, -0.66 * a])
         TorpedaY = np.array([R, R, 0, -R, -R, R, R, -R, -R, R])
@@ -100,7 +102,7 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
         print(4.5)
         Aim = self.widget.canvas.axes.plot(AimX,AimY)[0]
         #self.widget.canvas.axes.axis('scaled')
-        self.widget.canvas.show()
+
         N_o = 10
         Phi_o = np.linspace(0,6.28, N_o)
         np.hstack([np.cos(Phi_o), np.cos(Phi_o) * 0.8])
@@ -110,9 +112,17 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
         print(5)
 
         X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind = X_aim, Y_aim, Vx_aim, Vy_aim, Phi_aim
+        MindAim = self.widget.canvas.axes.plot(AimX, AimY, linestyle='dotted')[0]
         # Vx_mind, Vy_mind = 0, 0
-        monevr = 0
+        monevr = False
+        znak_monevra = 0
         znak_povorota = 0
+        n_monevra = 1
+        angle = self.widget.canvas.axes.plot([0, 10], [0, 0])[0]
+        # angle2 = self.widget.canvas.axes.plot([0, 10], [0, 0], color='black', linestyle='dotted')[0]
+
+        self.widget.canvas.show()
+
         print(6)
 
         def Rot2D(X, Y, Phi):  # rotates point (X,Y) on angle alpha with respect to Origin
@@ -173,7 +183,7 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
             return dX, dY, dPhi, dVx, dVy, dOmega
 
         def NewPoints(i):
-            global X, Y, Phi, Vx, Vy, Omega, cl, cb, cv, R, rho, a, b, Vo, J, m, X_aim, Y_aim, Phi_aim, Vx_aim, Vy_aim, Omega_aim, Explode, T_Explode, dt, Step_o, Detected, cl_aim, cb_aim, cv_aim, S_front, rho, S_side, L, Vo_aim, R_scr, S_r, J_aim, m_aim, X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind, monevr, znak_povorota
+            global X, Y, Phi, Vx, Vy, Omega, cl, cb, cv, R, rho, a, b, Vo, J, m, X_aim, Y_aim, Phi_aim, Vx_aim, Vy_aim, Omega_aim, Explode, T_Explode, dt, Step_o, Detected, cl_aim, cb_aim, cv_aim, S_front, rho, S_side, L, Vo_aim, R_scr, S_r, J_aim, m_aim, X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind, monevr, n_monevra, znak_monevra, znak_povorota
             # t+=dt
 
             if Explode == 0:
@@ -186,20 +196,27 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
                 DeltaY = Y_mind - Y
 
                 # print(Vx_mind, Vy_mind)
-                gamma = np.arctan2(DeltaY, DeltaX) - np.arctan2(np.sin(Phi), np.cos(Phi))
+                if Detected:
+                    gamma = np.arctan2(TCy, TCx) - np.arctan2(np.sin(Phi), np.cos(Phi))
+                else:
+                    gamma = np.arctan2(DeltaY, DeltaX) - np.arctan2(np.sin(Phi), np.cos(Phi))
                 while abs(gamma) > math.pi:
                     gamma -= 2 * math.pi * np.sign(gamma)
 
-                if DeltaX**2 + DeltaY**2 < a**2:
+                if DeltaX**2 + DeltaY**2 < a**2 * 2:
                     X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind = X_aim, Y_aim, Vx_aim, Vy_aim, Phi_aim
-                    print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-                    monevr = 1
-                    DrawnTorpeda.set_color([1, 0, 0])
-                    if gamma > 0:
-                        znak_povorota = -1
-                    else:
-                        znak_povorota = 1
+                    # print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+                    # monevr = 1
+                    # DrawnTorpeda.set_color([1, 0, 0])
+                    # if gamma > 0:
+                    #     znak_povorota = -1
+                    # else:
+                    #     znak_povorota = 1
 
+                if gamma > 0:
+                    znak_povorota = -1
+                else:
+                    znak_povorota = 1
 
                 if TCx**2 + TCy**2 < a**2:
                     Explode = 1
@@ -212,79 +229,157 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
                 while abs(beta) > math.pi:
                     beta -= 2*math.pi*np.sign(beta)
 
-                if monevr == 1:
-                    X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind = X_aim, Y_aim, Vx_aim, Vy_aim, Phi_aim
-                    # Координаты в памяти торпеды
-                    DeltaX = X_mind - X
-                    DeltaY = Y_mind - Y
 
-                    gamma = np.arctan2(DeltaY, DeltaX) - np.arctan2(np.sin(Phi), np.cos(Phi))
-                    while abs(gamma) > 2 * math.pi:
-                        gamma -= 2 * math.pi * np.sign(gamma)
+                DeltaX = X_mind - X
+                DeltaY = Y_mind - Y
 
-                    if abs(gamma) > math.pi / 3:
-                        if znak_povorota == 1:
-                            Alpha = Alpha_max
-                        else :
-                            Alpha = -Alpha_max
-                    else:
-                        if k * gamma > Alpha_max:
-                            Alpha = Alpha_max
-                        elif k * gamma < -Alpha_max:
-                            Alpha = -Alpha_max
-                        else:
-                            Alpha = k * gamma
-
-                    # gamma += math.pi
-                    #
-                    # print(gamma)
-                    # if gamma > math.pi / 4 and gamma < 7 / 4 * math.pi:
-                    #     gamma -= math.pi
-                    #     gamma = -gamma
-                    #     if k * gamma > Alpha_max:
-                    #         Alpha = Alpha_max
-                    #     elif k * gamma < Alpha_max:
-                    #         Alpha = -Alpha_max
-                    #     else:
-                    #         Alpha = k * gamma
-                    # else:
-                    #     gamma -= math.pi
-                    #     if k * gamma > Alpha_max:
-                    #         Alpha = Alpha_max
-                    #     elif k * gamma < -Alpha_max:
-                    #         Alpha = -Alpha_max
-                    #     else:
-                    #         Alpha = k * gamma
-
-                    # if k * gamma > Alpha_max:
-                    #     Alpha = Alpha_max
-                    # elif k * gamma < -Alpha_max:
-                    #     Alpha = -Alpha_max
-                    # else:
-                    #     Alpha = k * gamma
+                if Detected:
+                    gamma = np.arctan2(TCy, TCx) - np.arctan2(np.sin(Phi), np.cos(Phi))
                 else:
-                    if k * gamma > Alpha_max:
+                    gamma = np.arctan2(DeltaY, DeltaX) - np.arctan2(np.sin(Phi), np.cos(Phi))
+
+                teta = gamma
+                while abs(teta) > math.pi:
+                    teta -= 2 * math.pi * np.sign(teta)
+
+                while abs(gamma) > 2*math.pi:
+                    gamma -= 2 * math.pi * np.sign(gamma)
+
+
+                angle.set_data(Rot2D(np.array([0, 10]), np.array([0, 0]), teta))
+                # angle2.set_data(np.array([X, X_mind]), np.array([Y, Y_mind]))
+                # print(teta, gamma)
+                # print(Omega)
+                k = 1
+                Alpha_max = 0.3
+                alpha_monevra = 0.4
+
+                if monevr:
+                    DrawnTorpeda.set_color([1, 0, 0])
+                    if abs(teta) < math.pi / 10:
+                        monevr = False
+                        DrawnTorpeda.set_color([0, 0, 1])
+                        n_monevra = 1
+
+                    if abs(teta) < math.pi / 3.75:
+                        if znak_monevra < 0:
+                            Alpha = -alpha_monevra / n_monevra
+                        else:
+                            Alpha = alpha_monevra / n_monevra
+                    else:
+                        if znak_monevra > 0:
+                            Alpha = -alpha_monevra / n_monevra
+                        else:
+                            Alpha = alpha_monevra / n_monevra
+
+                    n_monevra += 0.0
+
+                else:
+                    if abs(teta) > math.pi / 5:
+                        monevr = True
+                        znak_monevra = np.sign(teta)
+
+                    if k * teta > Alpha_max:
                         Alpha = Alpha_max
-                    elif k * gamma < -Alpha_max:
+                    elif k * teta < -Alpha_max:
                         Alpha = -Alpha_max
                     else:
-                        Alpha = k * gamma
+                        Alpha = k * teta
+
+                # if monevr == 1:
+                #     X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind = X_aim, Y_aim, Vx_aim, Vy_aim, Phi_aim
+                #     # Координаты в памяти торпеды
+                #     DeltaX = X_mind - X
+                #     DeltaY = Y_mind - Y
+                #
+                #     gamma = np.arctan2(DeltaY, DeltaX) - np.arctan2(np.sin(Phi), np.cos(Phi))
+                #     while abs(gamma) > 2 * math.pi:
+                #         gamma -= 2 * math.pi * np.sign(gamma)
+                #
+                #     if abs(gamma) > math.pi / 3:
+                #         if znak_povorota == 1:
+                #             Alpha = Alpha_max
+                #         else:
+                #             Alpha = -Alpha_max
+                #     else:
+                #         if k * gamma > Alpha_max:
+                #             Alpha = Alpha_max
+                #         elif k * gamma < -Alpha_max:
+                #             Alpha = -Alpha_max
+                #         else:
+                #             Alpha = k * gamma
+                #
+                #     # gamma += math.pi
+                #     #
+                #     # print(gamma)
+                #     # if gamma > math.pi / 4 and gamma < 7 / 4 * math.pi:
+                #     #     gamma -= math.pi
+                #     #     gamma = -gamma
+                #     #     if k * gamma > Alpha_max:
+                #     #         Alpha = Alpha_max
+                #     #     elif k * gamma < Alpha_max:
+                #     #         Alpha = -Alpha_max
+                #     #     else:
+                #     #         Alpha = k * gamma
+                #     # else:
+                #     #     gamma -= math.pi
+                #     #     if k * gamma > Alpha_max:
+                #     #         Alpha = Alpha_max
+                #     #     elif k * gamma < -Alpha_max:
+                #     #         Alpha = -Alpha_max
+                #     #     else:
+                #     #         Alpha = k * gamma
+                #
+                #     # if k * gamma > Alpha_max:
+                #     #     Alpha = Alpha_max
+                #     # elif k * gamma < -Alpha_max:
+                #     #     Alpha = -Alpha_max
+                #     # else:
+                #     #     Alpha = k * gamma
+                # else:
+                #     # if k * gamma > Alpha_max:
+                #     #     Alpha = Alpha_max
+                #     # elif k * gamma < -Alpha_max:
+                #     #     Alpha = -Alpha_max
+                #     # else:
+                #     #     Alpha = k * gamma
+                #     DeltaX = X_mind - X
+                #     DeltaY = Y_mind - Y
+                #
+                #     gamma = np.arctan2(DeltaY, DeltaX) - np.arctan2(np.sin(Phi), np.cos(Phi))
+                #     while abs(gamma) > 2 * math.pi:
+                #         gamma -= 2 * math.pi * np.sign(gamma)
+                #
+                #     if abs(gamma) > math.pi / 3:
+                #         if znak_povorota == 1:
+                #             Alpha = Alpha_max
+                #         else:
+                #             Alpha = -Alpha_max
+                #     else:
+                #         if k * gamma > Alpha_max:
+                #             Alpha = Alpha_max
+                #         elif k * gamma < -Alpha_max:
+                #             Alpha = -Alpha_max
+                #         else:
+                #             Alpha = k * gamma
 
 
 
                 if abs(beta) < G_s and TCx**2 + TCy**2<R_s**2:
                     Detected = 1
-                    # DrawnTorpeda.set_color([1, 0, 0])
-                    # if k*beta>Alpha_max:
-                    #     Alpha = Alpha_max
-                    # elif k*beta<-Alpha_max:
-                    #     Alpha = -Alpha_max
-                    # else:
-                    #     Alpha = k*beta
-                else:
+                    DrawnTorpeda.set_color([1, 0, 0])
+                    if k*beta>Alpha_max:
+                        Alpha = Alpha_max
+                    elif k*beta<-Alpha_max:
+                        Alpha = -Alpha_max
+                    else:
+                        Alpha = k*beta
 
+                    X_mind, Y_mind, Vx_mind, Vy_mind, Phi_mind = X_aim, Y_aim, Vx_aim, Vy_aim, Phi_aim
+
+                else:
                     Detected = 0
-                    # DrawnTorpeda.set_color([0, 0, 1])
+                    DrawnTorpeda.set_color([0, 0, 1])
                 dX, dY, dPhi, dVx, dVy, dOmega = MoveEquations(X, Y, Phi, Vx, Vy, Omega, Alpha)
                 X += dX * dt
                 Y += dY * dt
@@ -312,6 +407,8 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
                 Omega_aim += dOmega_aim * dt
                 RAX, RAY = Rot2D(AimX, AimY, Phi_aim)
                 Aim.set_data(X_aim + RAX, Y_aim + RAY)
+                RAX_mind, RAY_mind = Rot2D(AimX, AimY, Phi_mind)
+                MindAim.set_data(X_mind + RAX_mind, Y_mind + RAY_mind)
             else:
                 T_Explode += Step_o
                 Step_o = 0.9*Step_o
@@ -320,7 +417,7 @@ class OceanWidget(QMainWindow, OceanForm.Ui_MainWindow):
                 DrawnTorpeda.set_data(X_o*a*T_Explode/dt+X, Y_o*a*T_Explode/dt+Y)
 
 
-            return [DrawnTorpeda,Aim]
+            return [DrawnTorpeda, Aim, MindAim, angle]
         fig = self.widget.canvas.figure
         animation = FuncAnimation(fig, NewPoints, interval=dt*1000, blit=True, frames=1001)
         self.widget.canvas.draw()
